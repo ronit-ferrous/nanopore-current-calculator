@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nanopore Current Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root,[data-theme="light"]{
+      --text-xs:clamp(.75rem,.7rem + .25vw,.875rem);--text-sm:clamp(.875rem,.8rem + .35vw,1rem);--text-base:clamp(1rem,.95rem + .25vw,1.125rem);--text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);--text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);--text-2xl:clamp(2rem,1.2rem + 2.5vw,3.5rem);
+      --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;--space-16:4rem;
+      --color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#fbfbf9;--color-surface-offset:#f3f0ec;--color-border:#d4d1ca;--color-divider:#dcd9d5;
+      --color-text:#28251d;--color-text-muted:#68665f;--color-text-faint:#9d9b95;--color-text-inverse:#f9f8f4;
+      --color-primary:#01696f;--color-primary-hover:#0c4e54;--color-primary-highlight:#cedcd8;--color-blue:#006494;--color-success:#437a22;--color-warning:#964219;
+      --radius-sm:.375rem;--radius-md:.5rem;--radius-lg:.75rem;--radius-xl:1rem;--radius-full:9999px;
+      --shadow-sm:0 1px 2px rgb(40 37 29 / 0.06);--shadow-md:0 4px 12px rgb(40 37 29 / 0.08);--shadow-lg:0 12px 32px rgb(40 37 29 / 0.12);
+      --font-display:'Instrument Serif', Georgia, serif;--font-body:'Inter', system-ui, sans-serif;
+    }
+    [data-theme="dark"]{
+      --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;--color-surface-offset:#1d1c1a;--color-border:#393836;--color-divider:#262523;
+      --color-text:#cdccca;--color-text-muted:#9a9894;--color-text-faint:#72706c;--color-text-inverse:#2b2a28;
+      --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-highlight:#313b3b;--color-blue:#5591c7;--color-success:#6daa45;--color-warning:#bb653b;
+      --shadow-sm:0 1px 2px rgb(0 0 0 / 0.2);--shadow-md:0 4px 12px rgb(0 0 0 / 0.3);--shadow-lg:0 12px 32px rgb(0 0 0 / 0.4);
+    }
+    *,:before,:after{box-sizing:border-box} html{-webkit-text-size-adjust:none;text-size-adjust:none;scroll-behavior:smooth} body{margin:0;min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);line-height:1.55;color:var(--color-text);background:linear-gradient(180deg,var(--color-bg),var(--color-surface-offset));}
+    h1,h2,h3{line-height:1.1;margin:0} p{margin:0;max-width:72ch} input,select,button,textarea{font:inherit} button{cursor:pointer}
+    .wrap{max-width:1180px;margin:0 auto;padding:var(--space-6)}
+    .skip{position:absolute;left:-9999px}.skip:focus{left:var(--space-4);top:var(--space-4);background:var(--color-surface);padding:var(--space-3);border-radius:var(--radius-md);z-index:10}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:var(--space-4);padding:var(--space-3) 0 var(--space-6)}
+    .brand{display:flex;align-items:center;gap:var(--space-3)}
+    .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--color-primary),var(--color-blue));display:grid;place-items:center;color:white;box-shadow:var(--shadow-md)}
+    .logo svg{width:24px;height:24px}
+    .brand-name{font-size:var(--text-sm);color:var(--color-text-muted)}
+    .theme-toggle{min-width:44px;min-height:44px;border:1px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);color:var(--color-text);display:grid;place-items:center;box-shadow:var(--shadow-sm)}
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:var(--space-6);align-items:start}
+    .hero-card,.panel,.result-card,.lit-card{background:color-mix(in srgb,var(--color-surface) 88%, transparent);border:1px solid color-mix(in srgb,var(--color-text) 12%, transparent);border-radius:var(--radius-xl);box-shadow:var(--shadow-md)}
+    .hero-card{padding:var(--space-8)} .hero h1{font-family:var(--font-display);font-size:var(--text-2xl);letter-spacing:-0.03em;margin-bottom:var(--space-4)}
+    .lead{color:var(--color-text-muted);margin-bottom:var(--space-6)}
+    .badge-row{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+    .badge{font-size:var(--text-xs);padding:.45rem .7rem;border-radius:var(--radius-full);background:var(--color-primary-highlight);color:var(--color-primary);font-weight:600}
+    .panel{padding:var(--space-6)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-6);margin-top:var(--space-6)}
+    .field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}
+    .field{display:flex;flex-direction:column;gap:var(--space-2)}
+    label{font-size:var(--text-sm);font-weight:600}
+    .hint{font-size:var(--text-xs);color:var(--color-text-muted)}
+    input,select{width:100%;padding:.85rem 1rem;border-radius:var(--radius-lg);border:1px solid var(--color-border);background:var(--color-surface-2);color:var(--color-text)}
+    input:focus,select:focus{outline:2px solid color-mix(in srgb,var(--color-primary) 60%, transparent);outline-offset:2px}
+    .actions{display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-4)}
+    .btn{padding:.9rem 1.1rem;border-radius:var(--radius-lg);border:1px solid var(--color-border);background:var(--color-surface-2);color:var(--color-text);font-weight:600;min-height:44px}
+    .btn-primary{background:var(--color-primary);color:var(--color-text-inverse);border-color:var(--color-primary)} .btn-primary:hover{background:var(--color-primary-hover)}
+    .results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);margin-top:var(--space-4)}
+    .result-card{padding:var(--space-5)} .metric-label{font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted);margin-bottom:var(--space-2)}
+    .metric-value{font-size:var(--text-xl);font-weight:700;letter-spacing:-.03em} .metric-sub{font-size:var(--text-sm);color:var(--color-text-muted);margin-top:var(--space-2)}
+    .formula{margin-top:var(--space-5);padding:var(--space-4);background:var(--color-surface-offset);border-radius:var(--radius-lg);font-size:var(--text-sm);overflow:auto}
+    .section{margin-top:var(--space-8)}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6)}
+    .lit-list{display:grid;gap:var(--space-4)} .lit-card{padding:var(--space-5)} .lit-card h3{font-size:var(--text-lg);margin-bottom:var(--space-2)}
+    .lit-card p,.lit-card li{color:var(--color-text-muted)}
+    .small{font-size:var(--text-sm)} .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    footer{padding:var(--space-8) 0;color:var(--color-text-muted);font-size:var(--text-sm)}
+    @media (max-width: 900px){.hero,.grid,.two-col,.results,.field-grid{grid-template-columns:1fr}.wrap{padding:var(--space-4)}.hero-card,.panel{padding:var(--space-5)}}
+  </style>
+</head>
+<body>
+<a href="#main" class="skip">Skip to content</a>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand" aria-label="Nanopore calculator brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"></circle><path d="M3 12h3M18 12h3M12 3v3M12 18v3"></path></svg>
+      </div>
+      <div>
+        <strong>Nanopore Current Calculator</strong>
+        <div class="brand-name">Literature-based open-pore conductance estimates</div>
+      </div>
+    </div>
+    <button class="theme-toggle" data-theme-toggle aria-label="Switch theme"></button>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <article class="hero-card">
+        <h1>Estimate ionic current from pore geometry, electrolyte conductivity, and bias.</h1>
+        <p class="lead">This app implements the standard cylindrical nanopore model with access resistance. It is useful for quick theoretical estimates of open-pore conductance and current before comparing to measured data.</p>
+        <div class="badge-row">
+          <span class="badge">Cylindrical pore</span>
+          <span class="badge">Access resistance included</span>
+          <span class="badge">PBS or custom conductivity</span>
+          <span class="badge">Instant current estimate</span>
+        </div>
+      </article>
+
+      <aside class="panel">
+        <h2 style="font-size:var(--text-lg);margin-bottom:var(--space-3)">Model used</h2>
+        <p class="small">For a cylindrical pore of diameter <span class="mono">d</span>, length <span class="mono">L</span>, solution conductivity <span class="mono">σ</span>, and applied voltage <span class="mono">V</span>:</p>
+        <div class="formula mono">
+          R<sub>pore</sub> = 4L / (σπd²)<br>
+          R<sub>access,total</sub> = 1 / (σd)<br><br>
+          G = 1 / (R<sub>pore</sub> + R<sub>access,total</sub>)<br>
+          I = G × V
+        </div>
+        <p class="small" style="margin-top:var(--space-3)">This is algebraically equivalent to the commonly used expression based on channel resistance plus two access-resistance terms for a circular nanopore.</p>
+      </aside>
+    </section>
+
+    <section class="grid section">
+      <section class="panel" aria-labelledby="calc-title">
+        <h2 id="calc-title" style="font-size:var(--text-lg);margin-bottom:var(--space-4)">Inputs</h2>
+        <div class="field-grid">
+          <div class="field">
+            <label for="diameter">Pore diameter (nm)</label>
+            <input id="diameter" type="number" value="500" min="0.1" step="0.1">
+          </div>
+          <div class="field">
+            <label for="thickness">Membrane thickness (nm)</label>
+            <input id="thickness" type="number" value="200" min="0.1" step="0.1">
+          </div>
+          <div class="field">
+            <label for="voltage">Bias voltage (mV)</label>
+            <input id="voltage" type="number" value="200" step="1">
+          </div>
+          <div class="field">
+            <label for="conductivityPreset">Electrolyte preset</label>
+            <select id="conductivityPreset">
+              <option value="1.7" selected>1× PBS (approx. 1.7 S/m)</option>
+              <option value="10.5">1 M KCl (approx. 10.5 S/m)</option>
+              <option value="11.18">1 M NaCl (approx. 11.18 S/m)</option>
+              <option value="custom">Custom conductivity</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="conductivity">Conductivity σ (S/m)</label>
+            <input id="conductivity" type="number" value="1.7" min="0.0001" step="0.0001">
+            <div class="hint">Use a measured conductivity if you know your exact buffer and temperature.</div>
+          </div>
+          <div class="field">
+            <label for="shapeFactor">Shape factor β</label>
+            <select id="shapeFactor">
+              <option value="1" selected>1.00 — ideal cylinder</option>
+              <option value="0.9">0.90 — slightly more resistive than ideal</option>
+              <option value="1.1">1.10 — slightly less resistive / effective-shape correction</option>
+            </select>
+            <div class="hint">Optional empirical correction when your real pore deviates from an ideal cylinder.</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="calculate">Calculate</button>
+          <button class="btn" id="reset">Reset defaults</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="output-title">
+        <h2 id="output-title" style="font-size:var(--text-lg);margin-bottom:var(--space-4)">Outputs</h2>
+        <div class="results">
+          <article class="result-card">
+            <div class="metric-label">Current</div>
+            <div class="metric-value" id="currentValue">387.91 nA</div>
+            <div class="metric-sub" id="currentAlt">0.3879 µA</div>
+          </article>
+          <article class="result-card">
+            <div class="metric-label">Conductance</div>
+            <div class="metric-value" id="conductanceValue">1.94 µS</div>
+            <div class="metric-sub" id="conductanceAlt">1940 nS</div>
+          </article>
+          <article class="result-card">
+            <div class="metric-label">Total resistance</div>
+            <div class="metric-value" id="resistanceValue">515.6 kΩ</div>
+            <div class="metric-sub" id="resistanceAlt">includes access + pore</div>
+          </article>
+        </div>
+        <div class="formula small" id="breakdown"></div>
+      </section>
+    </section>
+
+    <section class="two-col section">
+      <section class="panel">
+        <h2 style="font-size:var(--text-lg);margin-bottom:var(--space-3)">How to use it</h2>
+        <ul class="small">
+          <li>Enter pore diameter, membrane thickness, and bias voltage.</li>
+          <li>Select 1× PBS or enter your own conductivity.</li>
+          <li>Use the current estimate as an open-pore benchmark, then compare it to measured values.</li>
+          <li>If measured current is much lower, possible causes include a smaller effective pore, partial blockage, non-cylindrical geometry, or incorrect gain/scaling in the electronics.</li>
+        </ul>
+      </section>
+      <section class="panel">
+        <h2 style="font-size:var(--text-lg);margin-bottom:var(--space-3)">Limitations</h2>
+        <ul class="small">
+          <li>This is an ohmic estimate for symmetric electrolyte conditions and an open pore.</li>
+          <li>Surface charge, concentration polarization, double-layer overlap, and non-cylindrical shapes can shift real conductance.</li>
+          <li>The simple model is strongest as a first-pass estimate, not as a full inverse reconstruction of exact pore shape.</li>
+        </ul>
+      </section>
+    </section>
+
+    <section class="section">
+      <h2 style="font-size:var(--text-xl);margin-bottom:var(--space-4)">Literature basis</h2>
+      <div class="lit-list">
+        <article class="lit-card">
+          <h3>Access resistance is part of total nanopore resistance</h3>
+          <p class="small">Hyun et al. describe total resistance as the sum of pore resistance and access resistance, with one-sided access resistance given by <span class="mono">ρ / 4a</span>, leading to the familiar total resistance form for a cylindrical pore.</p>
+          <p class="small" style="margin-top:var(--space-2)"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3268918/" target="_blank" rel="noopener noreferrer">Read article</a></p>
+        </article>
+        <article class="lit-card">
+          <h3>Conductance depends on geometry and surface chemistry</h3>
+          <p class="small">Frament and Dwyer show that cylindrical, conical, and conical-cylindrical models can reproduce conductance differently, so geometry assumptions matter. That is why this app exposes a simple shape factor and states that the cylinder model is a first approximation.</p>
+          <p class="small" style="margin-top:var(--space-2)"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3673737/" target="_blank" rel="noopener noreferrer">Read article</a></p>
+        </article>
+        <article class="lit-card">
+          <h3>Why measured current may differ</h3>
+          <p class="small">Real pores can have effective lengths and shapes that differ from nominal membrane thickness, especially in thin or sculpted membranes. The app therefore reports theoretical values, which should be compared with experiment as a benchmark rather than treated as exact truth.</p>
+          <p class="small" style="margin-top:var(--space-2)"><a href="https://pubmed.ncbi.nlm.nih.gov/28974095/" target="_blank" rel="noopener noreferrer">Related model paper</a></p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Built as a static browser app for rapid nanopore-current estimation. Best used alongside your measured I–V data and known amplifier scaling.
+  </footer>
+</div>
+<script>
+const el = id => document.getElementById(id);
+const preset = el('conductivityPreset');
+const conductivityInput = el('conductivity');
+const defaults = {diameter:500, thickness:200, voltage:200, conductivity:1.7, preset:'1.7', shapeFactor:'1'};
+function fmtCurrent(A){
+  const abs=Math.abs(A);
+  if(abs>=1e-6) return [(A*1e6).toFixed(4)+' µA',(A*1e9).toFixed(2)+' nA'];
+  if(abs>=1e-9) return [(A*1e9).toFixed(2)+' nA',(A*1e12).toFixed(2)+' pA'];
+  return [(A*1e12).toFixed(2)+' pA',A.toExponential(3)+' A'];
+}
+function fmtConductance(S){
+  if(Math.abs(S)>=1e-6) return [(S*1e6).toFixed(2)+' µS',(S*1e9).toFixed(2)+' nS'];
+  if(Math.abs(S)>=1e-9) return [(S*1e9).toFixed(2)+' nS',(S*1e12).toFixed(2)+' pS'];
+  return [S.toExponential(3)+' S',''];
+}
+function fmtResistance(R){
+  const abs=Math.abs(R);
+  if(abs>=1e6) return [(R/1e6).toFixed(3)+' MΩ'];
+  if(abs>=1e3) return [(R/1e3).toFixed(1)+' kΩ'];
+  return [R.toFixed(2)+' Ω'];
+}
+function calculate(){
+  const d = parseFloat(el('diameter').value)*1e-9;
+  const L = parseFloat(el('thickness').value)*1e-9;
+  const V = parseFloat(el('voltage').value)*1e-3;
+  const sigma = parseFloat(el('conductivity').value);
+  const beta = parseFloat(el('shapeFactor').value);
+  if(!(d>0 && L>0 && sigma>0)) return;
+  const Rpore = 4*L/(sigma*Math.PI*d*d);
+  const Raccess = 1/(sigma*d);
+  const Rtotal = (Rpore + Raccess)/beta;
+  const G = 1/Rtotal;
+  const I = G*V;
+  const [iPrimary,iAlt] = fmtCurrent(I);
+  const [gPrimary,gAlt] = fmtConductance(G);
+  el('currentValue').textContent = iPrimary;
+  el('currentAlt').textContent = iAlt;
+  el('conductanceValue').textContent = gPrimary;
+  el('conductanceAlt').textContent = gAlt;
+  el('resistanceValue').textContent = fmtResistance(Rtotal)[0];
+  el('resistanceAlt').textContent = 'Rₚₒᵣₑ ' + fmtResistance(Rpore)[0] + ' + Rₐcc ' + fmtResistance(Raccess)[0];
+  el('breakdown').innerHTML = `
+    <strong>Breakdown</strong><br>
+    Pore resistance: <span class="mono">${fmtResistance(Rpore)[0]}</span><br>
+    Total access resistance: <span class="mono">${fmtResistance(Raccess)[0]}</span><br>
+    Effective total resistance: <span class="mono">${fmtResistance(Rtotal)[0]}</span><br>
+    Conductance: <span class="mono">${G.toExponential(4)} S</span><br>
+    Current at ${el('voltage').value} mV: <span class="mono">${I.toExponential(4)} A</span>
+  `;
+}
+preset.addEventListener('change',()=>{
+  if(preset.value!=='custom') conductivityInput.value = preset.value;
+});
+el('calculate').addEventListener('click',calculate);
+el('reset').addEventListener('click',()=>{
+  el('diameter').value=defaults.diameter; el('thickness').value=defaults.thickness; el('voltage').value=defaults.voltage; preset.value=defaults.preset; conductivityInput.value=defaults.conductivity; el('shapeFactor').value=defaults.shapeFactor; calculate();
+});
+['diameter','thickness','voltage','conductivity','shapeFactor'].forEach(id=>el(id).addEventListener('input',calculate));
+(function(){const t=document.querySelector('[data-theme-toggle]'),r=document.documentElement;let d=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';r.setAttribute('data-theme',d);const draw=()=>{t.innerHTML=d==='dark'?'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';}; draw(); t.addEventListener('click',()=>{d=d==='dark'?'light':'dark';r.setAttribute('data-theme',d);draw();});})();
+calculate();
+</script>
+</body>
+</html>
